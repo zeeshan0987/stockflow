@@ -1,0 +1,82 @@
+// StockFlow MVP - Prisma Schema
+// Database: SQLite (swap to PostgreSQL in prod by changing provider + DATABASE_URL)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// ORGANIZATIONS (Tenants)
+// ─────────────────────────────────────────────
+model Organization {
+  id                     String    @id @default(cuid())
+  name                   String
+  defaultLowStockThreshold Int     @default(5)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  users                  User[]
+  products               Product[]
+
+  @@map("organizations")
+}
+
+// ─────────────────────────────────────────────
+// USERS
+// ─────────────────────────────────────────────
+model User {
+  id             String       @id @default(cuid())
+  email          String       @unique
+  passwordHash   String
+  organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────
+// PRODUCTS
+// ─────────────────────────────────────────────
+model Product {
+  id                 String       @id @default(cuid())
+  organizationId     String
+  name               String
+  sku                String
+  description        String?
+  quantityOnHand     Int          @default(0)
+  costPrice          Float?
+  sellingPrice       Float?
+  lowStockThreshold  Int?         // null = use org default
+  deletedAt          DateTime?    // soft delete
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  stockAdjustments   StockAdjustment[]
+
+  @@unique([organizationId, sku])  // SKU unique per org
+  @@map("products")
+}
+
+// ─────────────────────────────────────────────
+// STOCK ADJUSTMENTS (lightweight history)
+// ─────────────────────────────────────────────
+model StockAdjustment {
+  id          String   @id @default(cuid())
+  productId   String
+  delta       Int      // positive = added, negative = removed
+  note        String?
+  createdAt   DateTime @default(now())
+
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("stock_adjustments")
+}
