@@ -3,7 +3,8 @@
 
 ### NextJS ###
 # dependencies
-/node_modules
+frontend/node_modules/
+frontend/package-lock.json
 backend/node_modules/
 /.pnp
 .pnp.js
@@ -12,11 +13,11 @@ backend/node_modules/
 /coverage
 
 # next.js
-/.next/
+frontend/.next/
 /out/
 
 # production
-/build
+frontend/build
 
 # misc
 .DS_Store
